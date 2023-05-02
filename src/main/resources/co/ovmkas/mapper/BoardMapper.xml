@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="co.ovmkas.mapper.BoardMapper">
+	<sql id="search">
+		<trim prefix="AND (" suffix=")" prefixOverrides="or">
+		<foreach collection="typeArr" item="t">
+			<trim prefix="or">
+				<choose>
+					<when test="t == 'T'.toString()">
+						title like CONCAT(CONCAT('%',#{keyword}),'%')
+					</when>
+					<when test="t == 'C'.toString()">
+						content like CONCAT(CONCAT('%',#{keyword}),'%')
+					</when>
+					<when test="t == 'W'.toString()">
+						writer like CONCAT(CONCAT('%',#{keyword}),'%')
+					</when>
+				</choose>
+			</trim>
+		</foreach>
+	</trim>	
+	</sql>
+	<select id="getList" resultType="board">
+	select * from tbl_board where bno > 0 <!-- 탐색 조건 때문에 where bno(primary key)를 적어준다 -->
+	</select>
+	
+	
+	<select id="getListWithPaging" resultType="board">
+		select * 
+		from tbl_board tb 
+		where bno > 0 
+		<include refid="search" />
+		order by bno desc
+		limit #{amount} offset #{offset}
+	</select>
+	
+	<!-- PK값을 알 필요 없는 경우 -->
+	<insert id="insert" >																
+		insert into tbl_board(title, content, writer) values ( #{title}, #{content}, #{writer})
+	</insert>
+	
+	
+	<!-- PK값을 알아야하는 경우 autoincrement일경우 order를  after로 바꾸고 select문에 nextval 대신 bno의 최대값을 가져온다 -->
+	<insert id="insertSelectKey">
+	<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+	<!-- select nextval(seq_board) -->
+	select nextval(seq_board) from dual
+	</selectKey>
+	insert into tbl_board(bno, title, content, writer) values (#{bno}, #{title}, #{content}, #{writer})
+	</insert>
+	
+	<select id="read" resultMap="boardMap"><!-- 객체가 올 수도 있다 board -->
+		select * from tbl_board LEFT JOIN TBL_ATTACH using(bno) where bno = #{bno} order by odr<!-- 파라미터가 타입이 한개라면 이름이 달라도 알아서 선행적으로 찾아준다 long타입의 toString -->
+	</select>
+	<!-- id : 앞으로 쓰일 이름 위에 resultType에 board를 type로 쓴다-->
+	<resultMap type="board" id="boardMap">
+	<!-- board의 bno column은 DB-->
+		<result property="bno" column="bno"/>
+		<result property="title" column="title"/>
+		<result property="content" column="content"/>
+		<result property="writer" column="writer"/>
+		<result property="regdate" column="regdate"/>
+		<result property="updatedate" column="updatedate"/>
+		<collection property="attachs" resultMap="attachMap"/>
+			
+	</resultMap>
+	<resultMap type="attach" id="attachMap">
+		<result property="uuid" column="uuid"/>
+		<result property="path" column="path"/>
+		<result property="name" column="name"/>
+		<result property="image" column="image"/>
+		<result property="bno" column="bno"/>
+	</resultMap>
+	
+	<delete id="delete">
+		delete from tbl_board where bno = #{bno}
+	</delete>
+	
+	<update id="update">
+		update tbl_board set
+		title = #{title}
+		,content = #{content}
+		,writer = #{writer}
+		<!-- ,updatedate = now() -->
+		,updatedate = now()
+		where bno = #{bno}
+	</update>
+	
+	<select id="getTotalCnt" resultType="int">
+		select count(*) 
+		from TBL_BOARD tb 
+		where bno >0
+		<include refid="search" />
+	</select>
+	
+	<update id="updateReplyCnt">
+		update tbl_board set replycnt = replycnt + #{amount} where bno = #{bno}
+	</update>
+</mapper>

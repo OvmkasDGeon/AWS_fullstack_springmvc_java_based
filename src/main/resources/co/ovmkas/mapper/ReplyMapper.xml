@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="co.ovmkas.mapper.ReplyMapper">
+	<insert id="insert">
+		<!-- 쿼리상 컬럼은 keyColmun --> <!-- keyPropery는 바인딩 할 객체 -->
+		<selectKey order="BEFORE" keyProperty="rno" resultType="long">
+			select nextval(seq_reply) from dual
+		</selectKey>
+		insert into tbl_reply(rno, bno, reply, replyer)
+		values(#{rno}, #{bno}, #{reply}, #{replyer})
+	</insert>
+	<select id="read" resultType="reply"><!-- resultmap, type, set 3개중 하나는 와야한다 select시 그리고 reply이라는 별칭을 쓰기위해선 vo에 @Alias("reply") 써준다-->
+		select * from tbl_reply where rno = #{rno}
+	</select>
+	
+	<delete id="delete">
+		delete from tbl_reply where rno = #{rno}
+	</delete>
+	
+	<delete id="deleteByBno">
+		delete from tbl_reply where bno = #{bno}
+	</delete>
+	
+	<update id="update">
+		update tbl_reply set
+		reply = #{reply}
+		,updatedate = now()
+		where rno = #{rno}
+	</update>
+	
+	<select id="getList" resultType="reply">
+		SELECT * FROM TBL_reply WHERE bno = #{bno} and rno > #{rno} order by rno limit 5  
+	</select>
+</mapper>
